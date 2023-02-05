@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "PictogramGenerator": {
+      "commandName": "Project",
+      "commandLineArgs": "..\\..\\..\\..\\..\\..\\Example\\SourceImages\\ImageDefinition.xlsx ..\\..\\..\\..\\..\\..\\Example\\GeneratedImages\\ ..\\..\\..\\..\\..\\..\\Example\\SourceImages\\"
+    }
+  }
+}
