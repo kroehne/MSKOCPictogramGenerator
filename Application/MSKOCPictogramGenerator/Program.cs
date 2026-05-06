@@ -65,20 +65,24 @@ namespace PictogramGenerator
                 int _configBorderBorderRight = 10;
                 int _configBorderBorderBottom = 10;
 
-                Dictionary<string, LegendDefinition> data = new Dictionary<string, LegendDefinition>();
-                 
                 try
                 {
                     if (File.Exists(_defFile))
                     {
-                        Dictionary<string, int> _columnOrder = new Dictionary<string, int>();
                         using (var stream = File.Open(_defFile, FileMode.Open, FileAccess.Read))
                         {
                             using (var reader = ExcelReaderFactory.CreateReader(stream))
                             {
-                                bool isHeader = true;
                                 do
                                 {
+                                    string _sheetName = reader.Name;
+                                    bool _isLangSheet = System.Text.RegularExpressions.Regex.IsMatch(_sheetName, @"^[a-zA-Z]{2,3}(-[a-zA-Z]{2,4})?$");
+                                    string _langSuffix = _isLangSheet ? "_" + _sheetName : "";
+
+                                    Dictionary<string, LegendDefinition> data = new Dictionary<string, LegendDefinition>();
+                                    Dictionary<string, int> _columnOrder = new Dictionary<string, int>();
+                                    bool isHeader = true;
+
                                     while (reader.Read())
                                     { 
                                         if (isHeader)
@@ -156,6 +160,16 @@ namespace PictogramGenerator
                                         }
                                         
                                     }
+
+                                    foreach (var v in data.Values)
+                                    {
+                                        if (_isLangSheet)
+                                        {
+                                            v.Filename = System.IO.Path.GetFileNameWithoutExtension(v.Filename) + _langSuffix + System.IO.Path.GetExtension(v.Filename);
+                                        }
+                                        GenerateImage(_outFolder, _sourceFolder,  _configBackgroundColor, _configBlueColor, _configTextColor, _configBorderStartX, _configBorderStartY, _configBorderBorderRight, _configBorderBorderBottom, v);
+                                    }
+
                                 } while (reader.NextResult());
                             }
                         }
@@ -163,12 +177,6 @@ namespace PictogramGenerator
                     else
                     {
                         Console.WriteLine(_defFile + " not found");
-                    }
-
-
-                    foreach (var v in data.Values)
-                    {
-                        GenerateImage(_outFolder, _sourceFolder,  _configBackgroundColor, _configBlueColor, _configTextColor, _configBorderStartX, _configBorderStartY, _configBorderBorderRight, _configBorderBorderBottom, v);
                     }
 
                 }
