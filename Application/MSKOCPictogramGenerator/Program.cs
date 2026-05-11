@@ -128,6 +128,20 @@ namespace PictogramGenerator
                                                     float.TryParse(reader.GetValue(_columnOrder["Scaling"]).ToString(), out _currentImageScalingFactor);
                                                 data[_currentImageFile].Scaling = _currentImageScalingFactor;
 
+                                                if (_columnOrder.ContainsKey("WHRatio"))
+                                                {
+                                                    var _whRatioVal = reader.GetValue(_columnOrder["WHRatio"]);
+                                                    if (_whRatioVal != null && float.TryParse(_whRatioVal.ToString(), out float _parsedWHRatio) && _parsedWHRatio > 0)
+                                                        data[_currentImageFile].WHRatio = _parsedWHRatio;
+                                                }
+
+                                                if (_columnOrder.ContainsKey("Title"))
+                                                {
+                                                    var _titleVal = reader.GetValue(_columnOrder["Title"]);
+                                                    if (_titleVal != null && !string.IsNullOrWhiteSpace(_titleVal.ToString()))
+                                                        data[_currentImageFile].Title = _titleVal.ToString();
+                                                }
+
                                                 // Line Specific
 
                                                 int _currentLineWrapTextWidht = 800;
@@ -212,7 +226,7 @@ namespace PictogramGenerator
                          .Fill(GetBrush(_configBackgroundColor, _height, _width))
                          .DrawImage(Image.Load(System.IO.Path.Combine(_sourceFolder, "Zahnraeder_340x400.png")), new Point(10, 10), 1)
                          .Draw(_blueBorderPen, _myRectRounded)
-                        .DrawText(_textOptionsTitle, "So geht's:",  Brushes.Solid(GetColor(_configBlueColor)))
+                        .DrawText(_textOptionsTitle, v.Title,  Brushes.Solid(GetColor(_configBlueColor)))
                         );
 
                 foreach (var l in v.Lines)
@@ -243,7 +257,31 @@ namespace PictogramGenerator
 
                 Console.WriteLine(v.Filename);
 
-                image.SaveAsPng(System.IO.Path.Combine(_outFolder, v.Filename));
+                if (v.WHRatio.HasValue)
+                {
+                    int _scaledWidth = image.Width;
+                    int _scaledHeight = image.Height;
+                    float _currentRatio = (float)_scaledWidth / _scaledHeight;
+                    int _finalWidth, _finalHeight;
+                    if (v.WHRatio.Value > _currentRatio)
+                    {
+                        _finalWidth = (int)Math.Round(_scaledHeight * v.WHRatio.Value);
+                        _finalHeight = _scaledHeight;
+                    }
+                    else
+                    {
+                        _finalWidth = _scaledWidth;
+                        _finalHeight = (int)Math.Round(_scaledWidth / v.WHRatio.Value);
+                    }
+                    using var _paddedImage = new Image<Rgba32>(_finalWidth, _finalHeight);
+                    _paddedImage.Mutate(ctx => ctx.Fill(GetBrush(_configBackgroundColor, _finalHeight, _finalWidth)));
+                    _paddedImage.Mutate(ctx => ctx.DrawImage(image, new Point(0, 0), 1f));
+                    _paddedImage.SaveAsPng(System.IO.Path.Combine(_outFolder, v.Filename));
+                }
+                else
+                {
+                    image.SaveAsPng(System.IO.Path.Combine(_outFolder, v.Filename));
+                }
 
             }
         }
@@ -385,6 +423,8 @@ namespace PictogramGenerator
         public int Width { get; set; }
         public int Height{ get; set; }        
         public float Scaling{ get; set; }
+        public float? WHRatio { get; set; }
+        public string Title { get; set; } = "So geht's:";
 
         public List<LegendLine> Lines { get; set; } = new List<LegendLine>();
     }
